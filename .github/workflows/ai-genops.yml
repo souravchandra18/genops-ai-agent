@@ -62,7 +62,6 @@ jobs:
         run: python3 ai-agent/agent.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GENOPS_API_KEY: ${{ secrets.GENOPS_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.VAULT_TOKEN }}
           INPUT_LLM_PROVIDER: 'openai'
           INPUT_RUN_SEMGREP: 'true'
@@ -70,3 +69,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Upload analysis results (real mode only)
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-results
+          path: analysis_results/
