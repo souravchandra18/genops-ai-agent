@@ -20,7 +20,7 @@ def build_prompt(detected, analyzer_results):
     )
 
 def run_genops_guardian(repo_root, mode):
-    api_key = os.getenv("GENOPS_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key)
 
     if mode == "demo":
