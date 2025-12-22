@@ -21,8 +21,7 @@ def build_prompt(detected, analyzer_results):
 
 def run_genops_guardian(repo_root, mode):
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return {"risk_score": 0, "risk_level": "Low", "issues": ["OPENAI_API_KEY missing"], "analysis_text": ""}
+
     client = OpenAI(api_key=api_key)
 
     if mode == "demo":
@@ -52,9 +51,7 @@ def run_genops_guardian(repo_root, mode):
 def post_comment(pr_number, body):
     token = os.getenv("GITHUB_TOKEN")
     repo_name = os.getenv("GITHUB_REPOSITORY")
-    if not token or not repo_name:
-        print(" Missing GITHUB_TOKEN or GITHUB_REPOSITORY, cannot post comment.")
-        return
+
     gh = Github(auth=Auth.Token(token))
     repo = gh.get_repo(repo_name)
     pr = repo.get_pull(int(pr_number))
