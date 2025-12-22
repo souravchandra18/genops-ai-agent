@@ -1,0 +1,9 @@
+PyGithub==2.8.1
+requests==2.31.0
+PyYAML==6.0
+ruff
+bandit
+semgrep
+checkov
+openai>=1.0.0
+pyyaml
