@@ -21,6 +21,8 @@ def build_prompt(detected, analyzer_results):
 
 def run_genops_guardian(repo_root, mode):
     api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return {"risk_score": 0, "risk_level": "Low", "issues": ["GENOPS_API_KEY missing"], "analysis_text": ""}
     client = OpenAI(api_key=api_key)
 
     if mode == "demo":
@@ -50,6 +52,9 @@ def run_genops_guardian(repo_root, mode):
 def post_comment(pr_number, body):
     token = os.getenv("GITHUB_TOKEN")
     repo_name = os.getenv("GITHUB_REPOSITORY")
+    if not token or not repo_name:
+        print(" Missing GITHUB_TOKEN or GITHUB_REPOSITORY, cannot post comment.")
+        return
     gh = Github(auth=Auth.Token(token))
     repo = gh.get_repo(repo_name)
     pr = repo.get_pull(int(pr_number))
@@ -68,7 +73,6 @@ def run_agent():
         f"### Repository Health Summary\n{llm_response.get('summary','')}\n\n---\n\n"
         f"### Detailed Report\n{llm_response.get('full', json.dumps(analyzer_results, indent=2))}"
     )
-    if pr_number: post_comment(pr_number, ua_comment)
 
     # GenOps Guardian
     genops_data = run_genops_guardian(repo_root, mode)
@@ -77,7 +81,19 @@ def run_agent():
         f"**Detected Issues:**\n" + "\n".join(f"- {i}" for i in genops_data.get("issues", [])) +
         f"\n\n**AI Analysis:**\n{genops_data.get('analysis_text','')}"
     )
-    if pr_number: post_comment(pr_number, guardian_comment)
+
+    if pr_number:
+        # Post comments in PR mode
+        post_comment(pr_number, ua_comment)
+        post_comment(pr_number, guardian_comment)
+    else:
+        # Save reports in real mode
+        os.makedirs("analysis_results", exist_ok=True)
+        with open("analysis_results/universal_agent.txt", "w", encoding="utf-8") as f:
+            f.write(ua_comment)
+        with open("analysis_results/genops_guardian.json", "w", encoding="utf-8") as f:
+            json.dump(genops_data, f, indent=2)
+        print("✅ Reports written to analysis_results/ for inspection.")
 
 if __name__ == "__main__":
     run_agent()
