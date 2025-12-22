@@ -22,7 +22,7 @@ def build_prompt(detected, analyzer_results):
 def run_genops_guardian(repo_root, mode):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        return {"risk_score": 0, "risk_level": "Low", "issues": ["GENOPS_API_KEY missing"], "analysis_text": ""}
+        return {"risk_score": 0, "risk_level": "Low", "issues": ["OPENAI_API_KEY missing"], "analysis_text": ""}
     client = OpenAI(api_key=api_key)
 
     if mode == "demo":
