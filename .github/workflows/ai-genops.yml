@@ -1,0 +1,72 @@
+name: AI & GenOps Guardian CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode (real, demo, or pr)'
+        required: true
+        default: 'real'
+      repo_path:
+        description: 'Path to repository for analysis'
+        required: false
+        default: '.'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  ai_genops_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl git npm ruby-full openjdk-11-jdk
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r ai-agent/requirements.txt
+          pip install -r scripts/requirements.txt
+
+      - name: Install Node.js analyzers
+        run: npm install -g eslint
+
+      - name: Install Ruby analyzers
+        run: |
+          gem install --user-install rubocop brakeman
+          echo "$(ruby -e 'puts Gem.user_dir')/bin" >> $GITHUB_PATH
+
+      - name: Install security tools
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          echo "/root/.tfsec/bin" >> $GITHUB_PATH
+
+      - name: Run Unified AI Agent
+        run: python3 ai-agent/agent.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GENOPS_API_KEY: ${{ secrets.GENOPS_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          INPUT_LLM_PROVIDER: 'openai'
+          INPUT_RUN_SEMGREP: 'true'
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
