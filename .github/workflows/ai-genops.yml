@@ -1,5 +1,5 @@
 #Author: Sourav Chandra
-name: AI & GenOps Guardian CI
+name: AI & GenOps Guardian
 
 on:
   pull_request:
