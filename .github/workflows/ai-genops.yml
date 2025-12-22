@@ -43,7 +43,6 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install -r ai-agent/requirements.txt
-          pip install -r scripts/requirements.txt
 
       - name: Install Node.js analyzers
         run: npm install -g eslint
