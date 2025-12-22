@@ -93,7 +93,7 @@ def run_agent():
             f.write(ua_comment)
         with open("analysis_results/genops_guardian.json", "w", encoding="utf-8") as f:
             json.dump(genops_data, f, indent=2)
-        print("✅ Reports written to analysis_results/ for inspection.")
+        print(" Reports written to analysis_results/ for inspection.")
 
 if __name__ == "__main__":
     run_agent()
