@@ -29,34 +29,98 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      # ---------- Language Runtimes ----------
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # ---------- System ----------
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl git npm ruby-full openjdk-11-jdk
+          sudo apt-get install -y curl git jq unzip php-cli php-xml
 
-      - name: Install Python dependencies
+      # ---------- Python ----------
+      - name: Install Python analyzers
         run: |
-          python3 -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r ai-agent/requirements.txt
+          pip install ruff pylint bandit semgrep checkov openai PyGithub
 
-      - name: Install Node.js analyzers
+      # ---------- tfsec ----------
+      - name: Install tfsec
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          echo "$HOME/.tfsec/bin" >> $GITHUB_PATH
+
+      # ---------- Node ----------
+      - name: Install ESLint
         run: npm install -g eslint
 
-      - name: Install Ruby analyzers
+      # ---------- Go ----------
+      - name: Install Go analyzers
         run: |
-          gem install --user-install rubocop brakeman
-          echo "$(ruby -e 'puts Gem.user_dir')/bin" >> $GITHUB_PATH
+          go install honnef.co/go/tools/cmd/staticcheck@latest
 
-      - name: Install security tools
+      # ---------- Java ----------
+      - name: Install Java analyzers
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          curl -sSfL https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-          echo "/root/.tfsec/bin" >> $GITHUB_PATH
+          curl -L -o spotbugs.tgz https://github.com/spotbugs/spotbugs/releases/download/4.8.3/spotbugs-4.8.3.tgz
+          tar -xzf spotbugs.tgz
+          sudo mv spotbugs-*/bin/spotbugs /usr/local/bin/
+
+          curl -L -o pmd.zip https://github.com/pmd/pmd/releases/download/pmd_releases/7.2.0/pmd-dist-7.2.0-bin.zip
+          unzip pmd.zip
+          sudo mv pmd-bin-*/bin/pmd /usr/local/bin/
+
+          curl -L -o checkstyle.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.17.0/checkstyle-10.17.0-all.jar
+          sudo mv checkstyle.jar /usr/local/bin/checkstyle.jar
+
+      # ---------- Ruby ----------
+      - name: Install RuboCop
+        run: gem install rubocop
+
+      # ---------- PHP ----------
+      - name: Install PHP analyzers
+        run: |
+          curl -L -o phpcs https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
+          chmod +x phpcs
+          sudo mv phpcs /usr/local/bin/phpcs
+
+          curl -L -o psalm.phar https://github.com/vimeo/psalm/releases/latest/download/psalm.phar
+          chmod +x psalm.phar
+          sudo mv psalm.phar /usr/local/bin/psalm
+
+      # ---------- Containers / IaC ----------
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Install kube-linter
+        run: |
+          curl -L https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
+          sudo mv kube-linter /usr/local/bin/
 
       - name: Run Unified AI Agent
         run: python3 ai-agent/agent.py
