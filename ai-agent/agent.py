@@ -62,7 +62,7 @@ def run_genops_guardian(repo_root, mode):
     {context}
     """
 
-    response = client.responses.create(model="gpt-4.1-mini", input=prompt, temperature=0)
+    response = client.responses.create(model="gpt-5-mini", input=prompt, temperature=0)
     try:
         return json.loads(response.output_text.strip())
     except Exception:
