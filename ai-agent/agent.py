@@ -29,12 +29,6 @@ For EVERY Critical and High issue:
   method name, or config block
 - For Docker / Kubernetes / Terraform → provide hardened YAML/Dockerfile snippets
 - For SpotBugs (bytecode tools) → reference class + method and refactoring pattern
-
-Label each fix explicitly as:
-[Exact line-level] | [Approximate line-level] | [Block-level]
-
-DO NOT omit remediation due to uncertainty.
-
 Repository analysis data:
 {json.dumps(analyzer_results, indent=2)}
 """
