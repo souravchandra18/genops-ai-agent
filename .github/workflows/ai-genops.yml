@@ -88,7 +88,7 @@ jobs:
         run: |
           curl -L -o spotbugs.tgz https://github.com/spotbugs/spotbugs/releases/download/4.8.3/spotbugs-4.8.3.tgz
           tar -xzf spotbugs.tgz
-          sudo mv spotbugs-*/bin/spotbugs /usr/local/bin/
+          sudo rm -f /usr/local/bin/spotbugs
           sudo mv spotbugs-4.8.3 /opt/spotbugs
           sudo ln -s /opt/spotbugs/bin/spotbugs /usr/local/bin/spotbugs
           chmod +x /opt/spotbugs/bin/spotbugs
