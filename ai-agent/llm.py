@@ -10,7 +10,7 @@ def call_llm(provider, prompt):
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
             headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
-            json={'model': 'gpt-4.1-mini', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1200}
+            json={'model': 'gpt-5', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1200}
         )
         data = response.json()
         text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
