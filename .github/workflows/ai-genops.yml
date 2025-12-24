@@ -89,14 +89,20 @@ jobs:
           curl -L -o spotbugs.tgz https://github.com/spotbugs/spotbugs/releases/download/4.8.3/spotbugs-4.8.3.tgz
           tar -xzf spotbugs.tgz
           sudo mv spotbugs-*/bin/spotbugs /usr/local/bin/
+          sudo mv spotbugs-4.8.3 /opt/spotbugs
+          sudo ln -s /opt/spotbugs/bin/spotbugs /usr/local/bin/spotbugs
+          chmod +x /opt/spotbugs/bin/spotbugs
 
           curl -L -o pmd.zip https://github.com/pmd/pmd/releases/download/pmd_releases/7.2.0/pmd-dist-7.2.0-bin.zip
           unzip pmd.zip
-          sudo mv pmd-bin-*/bin/pmd /usr/local/bin/
+          sudo mv pmd-bin-7.2.0 /opt/pmd
+          sudo ln -s /opt/pmd/bin/pmd /usr/local/bin/pmd
 
           curl -L -o checkstyle.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.17.0/checkstyle-10.17.0-all.jar
-          sudo mv checkstyle.jar /usr/local/bin/checkstyle.jar
-
+          curl -L -o google_checks.xml https://raw.githubusercontent.com/checkstyle/checkstyle/master/src/main/resources/google_checks.xml
+          sudo mkdir -p /opt/checkstyle
+          sudo mv checkstyle.jar google_checks.xml /opt/checkstyle/
+      
       # ---------- Ruby ----------
       - name: Install RuboCop
         run: gem install rubocop
