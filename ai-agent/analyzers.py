@@ -61,8 +61,8 @@ def run_analyzers(repo_root, detected, run_semgrep):
     # Java
     if 'java' in detected['languages']:
         results['spotbugs'] = run_command(['spotbugs', '-textui', '-xml', 'target/classes'], repo_root)
-        results['pmd'] = run_command(['pmd', '-d', 'src', '-R', 'rulesets/java/quickstart.xml', '-f', 'xml'], repo_root)
-        results['checkstyle'] = run_command(['checkstyle', '-c', '/google_checks.xml', 'src'], repo_root)
+        results['pmd'] = run_command(['pmd', 'check', '-d', 'src', '-R', 'rulesets/java/quickstart.xml', '-f', 'json'], repo_root)
+        results['checkstyle'] = run_command(['java', '-jar', '/opt/checkstyle/checkstyle.jar', '-c', '/opt/checkstyle/google_checks.xml', 'src'], repo_root)
 
     # Go
     if 'go' in detected['languages']:
