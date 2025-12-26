@@ -2,131 +2,109 @@ import json
 import re
 from pathlib import Path
 from docx import Document
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_LEFT
 from reportlab.lib import colors
 
 
-ILLEGAL_CHARS_RE = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F]")
+ILLEGAL = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F]")
 
 
-def clean_text(val):
-    if isinstance(val, str):
-        return ILLEGAL_CHARS_RE.sub("", val)
-    return str(val)
+def clean(v):
+    return ILLEGAL.sub("", str(v)) if v else ""
 
 
 def extract_json_blocks(md_text):
     blocks = []
-    for section in md_text.split("<details>")[1:]:
-        if "```json" not in section:
+    for sec in md_text.split("<details>")[1:]:
+        if "```json" not in sec:
             continue
         try:
-            json_text = section.split("```json", 1)[1].split("```", 1)[0]
-            blocks.append(json.loads(json_text.strip()))
+            txt = sec.split("```json", 1)[1].split("```", 1)[0]
+            blocks.append(json.loads(txt.strip()))
         except Exception:
             continue
     return blocks
 
 
-def flatten_json(obj, parent_key="", sep="."):
-    items = []
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            items.extend(flatten_json(v, new_key, sep))
-    elif isinstance(obj, list):
-        for i, v in enumerate(obj):
-            new_key = f"{parent_key}[{i}]"
-            items.extend(flatten_json(v, new_key, sep))
-    else:
-        items.append((parent_key, obj))
-    return items
+def normalize_issue(obj):
+    issue = {}
+    for k, v in obj.items():
+        lk = k.lower()
+        if "file" in lk or "path" in lk:
+            issue["File"] = v
+        if "rule" in lk or "id" in lk:
+            issue["Rule"] = v
+        if "severity" in lk or "level" in lk:
+            issue["Severity"] = v
+        if "message" in lk or "title" in lk or "description" in lk:
+            issue["Message"] = v
+    return issue
 
 
-def normalize_block(block, source_index):
-    flat = dict(flatten_json(block))
-    rows = []
+def find_issues(data):
+    issues = []
 
-    list_keys = [k for k in flat if "[" in k]
+    if isinstance(data, dict):
+        found = normalize_issue(data)
+        if len(found) >= 2:
+            issues.append(found)
+        for v in data.values():
+            issues.extend(find_issues(v))
 
-    if not list_keys:
-        flat["source_block"] = source_index
-        rows.append(flat)
-        return rows
+    elif isinstance(data, list):
+        for i in data:
+            issues.extend(find_issues(i))
 
-    groups = {}
-    for key, val in flat.items():
-        if "[" in key:
-            prefix = key.split("[")[0]
-            groups.setdefault(prefix, {})[key] = val
-        else:
-            for g in groups.values():
-                g[key] = val
-
-    for g in groups.values():
-        g["source_block"] = source_index
-        rows.append(g)
-
-    return rows
+    return issues
 
 
-def build_report(INPUT_MD: str, OUTPUT_DOCX: str, OUTPUT_PDF: str):
-    INPUT_MD = Path(INPUT_MD)
-    OUTPUT_DOCX = Path(OUTPUT_DOCX)
-    OUTPUT_PDF = Path(OUTPUT_PDF)
+def build_report(md_path, docx_out, pdf_out):
+    md = Path(md_path).read_text(encoding="utf-8", errors="ignore")
+    blocks = extract_json_blocks(md)
 
-    md_text = INPUT_MD.read_text(encoding="utf-8", errors="ignore")
-    blocks = extract_json_blocks(md_text)
+    all_issues = []
+    for b in blocks:
+        all_issues.extend(find_issues(b))
 
-    all_rows = []
-    for i, block in enumerate(blocks):
-        all_rows.extend(normalize_block(block, i))
-
-    if not all_rows:
-        print("⚠ No JSON blocks found inside <details> tags.")
+    if not all_issues:
+        print("⚠ No readable issues detected.")
         return
 
-    headers = sorted({k for r in all_rows for k in r.keys()})
+    headers = ["File", "Rule", "Severity", "Message"]
 
-    table_data = [headers]
-    for r in all_rows:
-        table_data.append([clean_text(r.get(h, "")) for h in headers])
-
-    OUTPUT_DOCX.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PDF.parent.mkdir(parents=True, exist_ok=True)
-
-    # ---------- DOCX ----------
+    # -------- DOCX --------
     doc = Document()
-    doc.add_heading("AI GenOps Universal Analysis Report", level=1)
+    doc.add_heading("AI GenOps Security Analysis Report", level=1)
 
     table = doc.add_table(rows=1, cols=len(headers))
     for i, h in enumerate(headers):
         table.rows[0].cells[i].text = h
 
-    for row in table_data[1:]:
-        cells = table.add_row().cells
-        for i, val in enumerate(row):
-            cells[i].text = val
+    for i in all_issues:
+        row = table.add_row().cells
+        for idx, h in enumerate(headers):
+            row[idx].text = clean(i.get(h))
 
-    doc.save(OUTPUT_DOCX)
+    doc.save(docx_out)
 
-    # ---------- PDF ----------
+    # -------- PDF --------
     styles = getSampleStyleSheet()
-    elements = [Paragraph("AI GenOps Universal Analysis Report", styles["Title"])]
+    elements = [Paragraph("AI GenOps Security Analysis Report", styles["Title"]), Spacer(1, 10)]
 
-    pdf_table = Table(table_data, repeatRows=1)
-    pdf_table.setStyle(TableStyle([
+    pdf_data = [headers]
+    for i in all_issues:
+        pdf_data.append([clean(i.get(h)) for h in headers])
+
+    t = Table(pdf_data, repeatRows=1)
+    t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
         ('GRID', (0,0), (-1,-1), 0.25, colors.black),
-        ('FONT', (0,0), (-1,0), 'Helvetica-Bold')
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
 
-    elements.append(pdf_table)
+    elements.append(t)
+    SimpleDocTemplate(str(pdf_out)).build(elements)
 
-    doc_pdf = SimpleDocTemplate(str(OUTPUT_PDF))
-    doc_pdf.build(elements)
-
-    print("✔ DOCX and PDF reports generated:")
-    print(" -", OUTPUT_DOCX)
-    print(" -", OUTPUT_PDF)
+    print("✔ Readable DOCX & PDF report created")
