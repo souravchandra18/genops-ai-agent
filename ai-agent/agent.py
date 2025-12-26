@@ -143,6 +143,10 @@ def run_agent():
         Path("analysis_results/genops_universal_report.csv"),
         Path("analysis_results/genops_universal_report.xlsx")
     )
+
+    print("📂 Files inside analysis_results:")
+    for f in Path("analysis_results").glob("*"):
+        print(" -", f.name)
     
 
     # --- Short PR comment ---
