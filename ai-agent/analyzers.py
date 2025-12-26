@@ -51,7 +51,8 @@ def run_analyzers(repo_root, detected, run_semgrep):
 
     # Python
     if 'python' in detected['languages']:
-        results['python'] = run_command(['ruff', '.'], repo_root) or run_command(['pylint', '-f', 'json', '.'], repo_root)
+        results['python'] = run_command(['ruff', '.'], repo_root)
+        results['pylint'] = run_command(['pylint', '-f', 'json', '.'], repo_root)
         results['bandit'] = run_command(['bandit', '-r', '.', '-f', 'json'], repo_root)
 
     # JavaScript
