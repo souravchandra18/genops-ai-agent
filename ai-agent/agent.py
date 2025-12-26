@@ -11,13 +11,27 @@ def run_universal_agent(repo_root, llm_provider, run_semgrep):
     return call_llm(provider=llm_provider, prompt=prompt), analyzer_results
 
 def build_prompt(detected, analyzer_results):
-    return (
-        "You are an expert engineering reviewer. Produce:\n"
-        "1) A short summary of the repo health.\n"
-        "2) A prioritized list of all actionable items.\n"
-        "3) Line-level suggestions if available.\n"
-        f"Repository analysis data:\n{json.dumps(analyzer_results, indent=2)}"
-    )
+    return f"""
+You are a senior Staff Engineer, Security Architect, and DevOps reviewer.
+
+MANDATORY OUTPUT FORMAT (DO NOT SKIP ANY SECTION):
+
+1) Repository Health Summary
+
+2) Prioritized Actionable Items
+- Clearly label each item as Critical / High / Medium / Low
+- Mention tool name
+
+3) Line-level or Block-level Remediation (MANDATORY)
+For EVERY Critical and High issue:
+- If file + line number exists → give exact line-level fix
+- If line number is missing → give approximate line range, class name,
+  method name, or config block
+- For Docker / Kubernetes / Terraform → provide hardened YAML/Dockerfile snippets
+- For SpotBugs (bytecode tools) → reference class + method and refactoring pattern
+Repository analysis data:
+{json.dumps(analyzer_results, indent=2)}
+"""
 
 def run_genops_guardian(repo_root, mode):
     api_key = os.getenv("OPENAI_API_KEY")
