@@ -20,7 +20,7 @@ MANDATORY OUTPUT FORMAT (DO NOT SKIP ANY SECTION):
 
 2) Prioritized Actionable Items
 - Clearly label each item as Critical / High / Medium / Low
-- Mention tool name (PMD, SpotBugs, Checkstyle, Trivy, Semgrep, etc.)
+- Mention tool name
 
 3) Line-level or Block-level Remediation (MANDATORY)
 For EVERY Critical and High issue:
