@@ -140,8 +140,8 @@ def run_agent():
 
     build_report(
         Path("analysis_results/analyzer_results_convert.md"),
-        Path("analysis_results/genops_universal_report.csv"),
-        Path("analysis_results/genops_universal_report.xlsx")
+        Path("analysis_results/genops_universal_report.doc"),
+        Path("analysis_results/genops_universal_report.pdf")
     )
 
     print("📂 Files inside analysis_results:")

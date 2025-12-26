@@ -11,3 +11,5 @@ pylint
 pandas
 beautifulsoup4
 openpyxl
+python-docx
+reportlab
