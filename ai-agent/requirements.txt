@@ -10,3 +10,4 @@ pyyaml
 pylint
 pandas
 beautifulsoup4
+openpyxl
