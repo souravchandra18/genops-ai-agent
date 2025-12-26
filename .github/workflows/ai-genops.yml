@@ -131,7 +131,7 @@ jobs:
         run: python3 ai-agent/agent.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.VAULT_TOKEN }}
           INPUT_LLM_PROVIDER: 'openai'
           INPUT_RUN_SEMGREP: 'true'
           PR_NUMBER: ${{ github.event.pull_request.number }}
