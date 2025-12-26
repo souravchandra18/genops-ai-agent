@@ -15,7 +15,7 @@ def build_prompt(detected, analyzer_results):
         "You are an expert engineering reviewer. Produce:\n"
         "1) A short summary of the repo health.\n"
         "2) A prioritized list of all actionable items.\n"
-        "3) Line-level suggestions if available.\n"
+        "3) Line-level complete suggestions if available.\n"
         f"Repository analysis data:\n{json.dumps(analyzer_results, indent=2)}"
     )
 
