@@ -1,16 +1,25 @@
 import json
 import pandas as pd
-from bs4 import BeautifulSoup
+import re
 from pathlib import Path
+
+
+ILLEGAL_CHARS_RE = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F]")
+
+
+def clean_excel(value):
+    if isinstance(value, str):
+        return ILLEGAL_CHARS_RE.sub("", value)
+    return value
 
 
 def extract_json_blocks(md_text):
     blocks = []
 
+    # Robust extraction from fenced blocks inside <details>
     for section in md_text.split("<details>")[1:]:
         if "```json" not in section:
             continue
-
         try:
             json_text = section.split("```json", 1)[1].split("```", 1)[0]
             blocks.append(json.loads(json_text.strip()))
@@ -18,7 +27,6 @@ def extract_json_blocks(md_text):
             continue
 
     return blocks
-
 
 
 def flatten_json(obj, parent_key="", sep="."):
@@ -40,9 +48,9 @@ def normalize_block(block, source_index):
     flat = dict(flatten_json(block))
     rowset = []
 
-    issue_keys = [k for k in flat.keys() if "[" in k]
+    list_keys = [k for k in flat if "[" in k]
 
-    if not issue_keys:
+    if not list_keys:
         flat["source_block"] = source_index
         rowset.append(flat)
         return rowset
@@ -68,7 +76,7 @@ def build_report(INPUT_MD: str, OUTPUT_CSV: str, OUTPUT_XLSX: str):
     OUTPUT_CSV = Path(OUTPUT_CSV)
     OUTPUT_XLSX = Path(OUTPUT_XLSX)
 
-    md = INPUT_MD.read_text(encoding="utf-8")
+    md = INPUT_MD.read_text(encoding="utf-8", errors="ignore")
     blocks = extract_json_blocks(md)
 
     all_rows = []
@@ -86,6 +94,9 @@ def build_report(INPUT_MD: str, OUTPUT_CSV: str, OUTPUT_XLSX: str):
         .str.replace(r"\[\d+\]", "", regex=True)
         .str.replace(".", "_", regex=False)
     )
+
+    # 🔐 sanitize illegal Excel chars
+    df = df.applymap(clean_excel)
 
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
