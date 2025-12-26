@@ -42,7 +42,7 @@ def render_tool(tool: str, data: dict) -> list[str]:
     return lines
 
 
-def json_to_markdown(json_path: Path, md_path: Path) -> None:
+def convert(json_path: Path, md_path: Path) -> None:
     with json_path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -97,5 +97,5 @@ if __name__ == "__main__":
         print("Usage: json_to_md.py <input.json> <output.md>")
         sys.exit(1)
 
-    json_to_markdown(Path(sys.argv[1]), Path(sys.argv[2]))
+    convert(Path(sys.argv[1]), Path(sys.argv[2]))
     print("✔ Markdown report generated")
