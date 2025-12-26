@@ -5,18 +5,20 @@ from pathlib import Path
 
 
 def extract_json_blocks(md_text):
-    soup = BeautifulSoup(md_text, "html.parser")
     blocks = []
 
-    for details in soup.find_all("details"):
-        code = details.find("code")
-        if not code:
+    for section in md_text.split("<details>")[1:]:
+        if "```json" not in section:
             continue
+
         try:
-            blocks.append(json.loads(code.text.strip()))
+            json_text = section.split("```json", 1)[1].split("```", 1)[0]
+            blocks.append(json.loads(json_text.strip()))
         except Exception:
             continue
+
     return blocks
+
 
 
 def flatten_json(obj, parent_key="", sep="."):
