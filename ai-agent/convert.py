@@ -1,45 +1,55 @@
 # Author: Sourav Chandra
-# JSON → Document-style Markdown converter
+# JSON → fully organized, non-truncated Markdown document
 
 import json
 from pathlib import Path
 from typing import Any
 
 
-MAX_TEXT_LEN = 800
-
-
-def truncate(text: str, limit: int = MAX_TEXT_LEN) -> str:
-    if len(text) > limit:
-        return text[:limit] + "\n…(truncated)"
-    return text
+def render_block(title: str, content: str, language: str = "text") -> list[str]:
+    return [
+        f"### {title}",
+        f"```{language}",
+        content.rstrip(),
+        "```",
+        ""
+    ]
 
 
 def render_tool(tool: str, data: dict) -> list[str]:
-    lines = []
-    returncode = data.get("returncode", 0)
+    lines: list[str] = []
+
+    returncode = data.get("returncode", "N/A")
+    stdout = data.get("stdout", "")
+    stderr = data.get("stderr", "")
 
     status = "✅ Clean" if returncode == 0 else "❌ Issues detected"
-    lines.append(f"## 🔧 {tool.capitalize()}")
-    lines.append(f"**Status:** {status}\n")
 
-    stdout = data.get("stdout", "").strip()
-    stderr = data.get("stderr", "").strip()
+    lines.extend([
+        f"## 🔧 {tool}",
+        f"**Return code:** `{returncode}`  ",
+        f"**Status:** {status}",
+        ""
+    ])
 
     if stdout:
-        lines.append("### 📄 Findings / Output")
-        lines.append("```text")
-        lines.append(truncate(stdout))
-        lines.append("```")
+        lines.extend(render_block("Standard Output", stdout))
 
     if stderr:
-        lines.append("\n### ⚠ Errors / Warnings")
-        lines.append("```text")
-        lines.append(truncate(stderr))
-        lines.append("```")
+        lines.extend(render_block("Standard Error", stderr))
 
-    lines.append("\n---\n")
+    lines.append("---\n")
     return lines
+
+
+def render_fallback(key: str, value: Any) -> list[str]:
+    return [
+        f"## 🔧 {key}",
+        "```text",
+        json.dumps(value, indent=2),
+        "```",
+        "\n---\n"
+    ]
 
 
 def convert(json_path: Path, md_path: Path) -> None:
@@ -60,42 +70,37 @@ def convert(json_path: Path, md_path: Path) -> None:
     ])
 
     # ---------- Executive Summary ----------
-    total_tools = len(data)
-    failed_tools = sum(
+    tools_total = len(data)
+    tools_with_findings = sum(
         1 for v in data.values()
         if isinstance(v, dict) and v.get("returncode", 0) != 0
     )
 
     md.extend([
         "## 📌 Executive Summary",
-        f"- Tools executed: **{total_tools}**",
-        f"- Tools with findings: **{failed_tools}**",
+        f"- **Total tools executed:** {tools_total}",
+        f"- **Tools with findings:** {tools_with_findings}",
         "",
         "---",
         ""
     ])
 
     # ---------- Tool-wise Sections ----------
-    for tool, tool_data in data.items():
-        if isinstance(tool_data, dict):
-            md.extend(render_tool(tool, tool_data))
+    for key, value in data.items():
+        if isinstance(value, dict):
+            md.extend(render_tool(key, value))
         else:
-            md.append(f"## 🔧 {tool}")
-            md.append("```text")
-            md.append(truncate(str(tool_data)))
-            md.append("```")
-            md.append("\n---\n")
+            md.extend(render_fallback(key, value))
 
     md_path.write_text("\n".join(md), encoding="utf-8")
 
 
-# CLI support
 if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 3:
         print("Usage: json_to_md.py <input.json> <output.md>")
-        sys.exit(1)
+        raise SystemExit(1)
 
     convert(Path(sys.argv[1]), Path(sys.argv[2]))
-    print("✔ Markdown report generated")
+    print("✔ Full Markdown report generated")
