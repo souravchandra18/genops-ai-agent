@@ -1,4 +1,6 @@
 # Author: Sourav Chandra
+from json_to_md import json_to_markdown
+from pathlib import Path
 import os
 import json
 import subprocess
@@ -122,6 +124,12 @@ def run_agent():
 
     with open("analysis_results/genops_guardian.json", "w") as f:
         json.dump(genops_data, f, indent=2)
+
+    # --- Convert JSON → Markdown ---
+    json_to_markdown(
+        Path("analysis_results/analyzer_results.json"),
+        Path("analysis_results/analyzer_results.md")
+    )
 
     # --- Short PR comment ---
     if pr_number:
