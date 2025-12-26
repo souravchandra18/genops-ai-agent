@@ -1,4 +1,4 @@
-#Author: Sourav Chandra
+# Author: Sourav Chandra
 name: AI & GenOps Guardian
 
 on:
@@ -80,18 +80,15 @@ jobs:
 
       # ---------- Go ----------
       - name: Install Go analyzers
-        run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
       # ---------- Java ----------
       - name: Install Java analyzers
         run: |
           curl -L -o spotbugs.tgz https://github.com/spotbugs/spotbugs/releases/download/4.8.3/spotbugs-4.8.3.tgz
           tar -xzf spotbugs.tgz
-          sudo rm -f /usr/local/bin/spotbugs
           sudo mv spotbugs-4.8.3 /opt/spotbugs
           sudo ln -s /opt/spotbugs/bin/spotbugs /usr/local/bin/spotbugs
-          chmod +x /opt/spotbugs/bin/spotbugs
 
           curl -L -o pmd.zip https://github.com/pmd/pmd/releases/download/pmd_releases/7.2.0/pmd-dist-7.2.0-bin.zip
           unzip pmd.zip
@@ -99,10 +96,11 @@ jobs:
           sudo ln -s /opt/pmd/bin/pmd /usr/local/bin/pmd
 
           curl -L -o checkstyle.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.17.0/checkstyle-10.17.0-all.jar
-          curl -L -o google_checks.xml https://raw.githubusercontent.com/checkstyle/checkstyle/master/src/main/resources/google_checks.xml
+          curl -L -o google_checks.xml \
+            https://raw.githubusercontent.com/checkstyle/checkstyle/checkstyle-10.17.0/src/main/resources/google_checks.xml
           sudo mkdir -p /opt/checkstyle
           sudo mv checkstyle.jar google_checks.xml /opt/checkstyle/
-      
+
       # ---------- Ruby ----------
       - name: Install RuboCop
         run: gem install rubocop
@@ -128,6 +126,7 @@ jobs:
           curl -L https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
           sudo mv kube-linter /usr/local/bin/
 
+      # ---------- Run AI Agent ----------
       - name: Run Unified AI Agent
         run: python3 ai-agent/agent.py
         env:
@@ -136,13 +135,11 @@ jobs:
           INPUT_LLM_PROVIDER: 'openai'
           INPUT_RUN_SEMGREP: 'true'
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Upload analysis results (real mode only)
-        if: github.event_name != 'pull_request'
+      # ---------- Upload Artifacts ----------
+      - name: Upload AI GenOps Analysis
         uses: actions/upload-artifact@v4
         with:
-          name: analysis-results
+          name: ai-genops-analysis
           path: analysis_results/
