@@ -135,15 +135,15 @@ def run_agent():
     if pr_number:
         critical = genops_data.get("issues", [])[:5]
         comment = f"""
-## 🤖 AI GenOps Review (Summary)
+##  AI GenOps Review (Summary)
 
 **Risk Score:** {genops_data['risk_score']} ({genops_data['risk_level']})
 
-### 🚨 Top Issues
+###  Top Issues
 {chr(10).join(f"- {i}" for i in critical) if critical else "- None"}
 
-📦 **Full analysis available as workflow artifacts**
-➡️ Actions → AI & GenOps Guardian → Artifacts
+ **Full analysis available as workflow artifacts**
+--> Actions → AI & GenOps Guardian → Artifacts
 """
         post_comment(pr_number, comment)
 
