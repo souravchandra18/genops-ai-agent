@@ -1,6 +1,7 @@
 # Author: Sourav Chandra
 from convert import convert
 from json_to_md import json_to_markdown
+from report_builder import build_report
 from pathlib import Path
 import os
 import json
@@ -135,7 +136,13 @@ def run_agent():
     convert(
         Path("analysis_results/analyzer_results.json"),
         Path("analysis_results/analyzer_results_convert.md")
-    )  
+    )
+
+    build_report(
+        Path("analysis_results/analyzer_results_convert.md"),
+        Path("analysis_results/genops_universal_report.csv"),
+        Path("analysis_results/genops_universal_report.csv")
+    )
     
 
     # --- Short PR comment ---

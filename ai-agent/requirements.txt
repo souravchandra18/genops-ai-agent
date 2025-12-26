@@ -8,3 +8,5 @@ checkov
 openai>=1.0.0
 pyyaml
 pylint
+pandas
+beautifulsoup4
