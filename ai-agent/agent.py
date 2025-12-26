@@ -141,7 +141,7 @@ def run_agent():
     build_report(
         Path("analysis_results/analyzer_results_convert.md"),
         Path("analysis_results/genops_universal_report.csv"),
-        Path("analysis_results/genops_universal_report.csv")
+        Path("analysis_results/genops_universal_report.xlsx")
     )
     
 
