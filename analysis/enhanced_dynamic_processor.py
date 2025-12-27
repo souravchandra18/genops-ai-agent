@@ -120,9 +120,15 @@ class EnhancedDynamicProcessor(DynamicAnalysisProcessor):
         .summary {{ background-color: #ecf0f1; padding: 20px; border-radius: 8px; margin: 20px 0; }}
         .tool-section {{ margin: 30px 0; border: 1px solid #bdc3c7; border-radius: 8px; overflow: hidden; }}
         .tool-header {{ background-color: #3498db; color: white; padding: 15px; font-weight: bold; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
-        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 10px 0; table-layout: fixed; }}
+        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; word-wrap: break-word; overflow-wrap: break-word; }}
         th {{ background-color: #34495e; color: white; }}
+        td.message-col {{ max-width: 400px; white-space: pre-wrap; word-break: break-word; }}
+        td.file-col {{ max-width: 300px; word-break: break-all; }}
+        td.tool-col {{ width: 80px; }}
+        td.severity-col {{ width: 100px; }}
+        td.line-col {{ width: 60px; text-align: center; }}
+        td.column-col {{ width: 60px; text-align: center; }}
         .severity-high {{ background-color: #ffebee; }}
         .severity-medium {{ background-color: #fff3e0; }}
         .severity-low {{ background-color: #f1f8e9; }}
@@ -166,22 +172,78 @@ class EnhancedDynamicProcessor(DynamicAnalysisProcessor):
     </div>
 """
         
-        # Add tool-specific sections
+        # Add tool-specific sections with improved table formatting
         for tool, data in self.tools_data.items():
             if data:
+                # Create DataFrame with better formatting
+                tool_df = pd.DataFrame(data)
+                
+                # Generate table HTML with custom classes
+                table_html = tool_df.to_html(escape=False, classes='table', table_id=f'table-{tool.lower()}')
+                
+                # Add custom CSS classes to columns
+                table_html = table_html.replace('<td>', '<td class="message-col">')
+                table_html = table_html.replace('border="1"', '')
+                
+                # Apply specific column classes
+                lines = table_html.split('\n')
+                improved_lines = []
+                
+                for line in lines:
+                    if '<td' in line and not 'class=' in line:
+                        # Detect column content and apply appropriate class
+                        if any(keyword in line for keyword in ['PMD', 'CHECKSTYLE', 'TRIVY', 'SEMGREP', 'SPOTBUGS']):
+                            line = line.replace('<td>', '<td class="tool-col">')
+                        elif any(keyword in line for keyword in ['Priority', 'WARN', 'ERROR', 'INFO', 'HIGH', 'MEDIUM', 'LOW']):
+                            line = line.replace('<td>', '<td class="severity-col">')
+                        elif line.count('/') > 2 or '.java' in line or '.xml' in line:  # File paths
+                            line = line.replace('<td>', '<td class="file-col">')
+                        elif line.strip().replace('<td>', '').replace('</td>', '').isdigit():  # Line/column numbers
+                            line = line.replace('<td>', '<td class="line-col">')
+                        else:
+                            line = line.replace('<td>', '<td class="message-col">')
+                    
+                    improved_lines.append(line)
+                
+                table_html = '\n'.join(improved_lines)
+                
                 html_content += f"""
     <div class="tool-section">
         <div class="tool-header">🔧 {tool} ({len(data)} issues)</div>
-        {pd.DataFrame(data).to_html(escape=False, classes='table', table_id=f'table-{tool.lower()}')}
+        {table_html}
     </div>
 """
         
         html_content += """
     <script>
-        // Add row highlighting on hover
+        // Add row highlighting on hover and improve message display
         document.querySelectorAll('tr').forEach(row => {
             row.addEventListener('mouseenter', () => row.style.backgroundColor = '#f8f9fa');
             row.addEventListener('mouseleave', () => row.style.backgroundColor = '');
+        });
+        
+        // Add click to expand long messages
+        document.querySelectorAll('td.message-col').forEach(cell => {
+            if (cell.textContent.length > 100) {
+                cell.style.cursor = 'pointer';
+                cell.title = 'Click to expand';
+                let isExpanded = false;
+                let originalText = cell.textContent;
+                let truncatedText = originalText.substring(0, 100) + '...';
+                
+                cell.textContent = truncatedText;
+                
+                cell.addEventListener('click', () => {
+                    if (isExpanded) {
+                        cell.textContent = truncatedText;
+                        cell.title = 'Click to expand';
+                    } else {
+                        cell.textContent = originalText;
+                        cell.title = 'Click to collapse';
+                    }
+                    isExpanded = !isExpanded;
+                });
+            }
         });
     </script>
 </body>
