@@ -137,9 +137,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
+      # --- Dynamic Post-Processing Layer ---
+      - name: Run Dynamic Analysis Layer
+        run: |
+          python analysis/dynamic_processor.py
+          python analysis/enhanced_dynamic_processor.py
+          python analysis/dynamic_validator.py
+
+
       # ---------- Upload Artifacts ----------
       - name: Upload AI GenOps Analysis
         uses: actions/upload-artifact@v4
         with:
           name: ai-genops-analysis
-          path: analysis_results/
+          path: |
+            analysis_results/
+            dynamic_results/
+            enhanced_dynamic_results/

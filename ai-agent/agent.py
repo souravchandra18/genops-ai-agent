@@ -1,4 +1,5 @@
 # Author: Sourav Chandra
+from convert import convert
 from json_to_md import json_to_markdown
 from pathlib import Path
 import os
@@ -130,6 +131,17 @@ def run_agent():
         Path("analysis_results/analyzer_results.json"),
         Path("analysis_results/analyzer_results.md")
     )
+
+    convert(
+        Path("analysis_results/analyzer_results.json"),
+        Path("analysis_results/analyzer_results_convert.md")
+    )
+
+
+    print("📂 Files inside analysis_results:")
+    for f in Path("analysis_results").glob("*"):
+        print(" -", f.name)
+    
 
     # --- Short PR comment ---
     if pr_number:
