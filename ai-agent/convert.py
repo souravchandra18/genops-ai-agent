@@ -7,11 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Any
 from collections import defaultdict
 
-
-# -------------------------------
-# Severity helpers
-# -------------------------------
-
 SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
 
 def normalize_severity(value: str) -> str:
@@ -23,91 +18,38 @@ def normalize_severity(value: str) -> str:
             return s
     return "INFO"
 
-
 def extract_severities(obj: Any, bucket: Dict[str, int]):
-    """
-    Recursively extract severity counts from JSON objects.
-    """
     if isinstance(obj, dict):
         for k, v in obj.items():
-            if k.lower() in ("severity", "level", "impact"):
+
+            key = k.lower()
+
+            if key in (
+                "severity", "risklevel", "risk_level",
+                "priority", "impact"
+            ):
                 bucket[normalize_severity(str(v))] += 1
+
+            # CVSS numeric mapping
+            if key in ("cvss", "cvss_score"):
+                try:
+                    score = float(v)
+                    if score >= 9:
+                        bucket["CRITICAL"] += 1
+                    elif score >= 7:
+                        bucket["HIGH"] += 1
+                    elif score >= 4:
+                        bucket["MEDIUM"] += 1
+                    elif score > 0:
+                        bucket["LOW"] += 1
+                except Exception:
+                    pass
+
             extract_severities(v, bucket)
+
     elif isinstance(obj, list):
         for i in obj:
             extract_severities(i, bucket)
-
-
-# -------------------------------
-# Rendering helpers
-# -------------------------------
-
-def render_json_block(title: str, obj: Any) -> List[str]:
-    return [
-        f"### 📄 {title}",
-        "<details>",
-        "<summary><strong>View full output</strong></summary>",
-        "",
-        "```json",
-        json.dumps(obj, indent=2),
-        "```",
-        "",
-        "</details>",
-        ""
-    ]
-
-
-def render_text_block(title: str, text: str) -> List[str]:
-    lines = [l for l in text.splitlines() if l.strip()]
-    out = [f"### 📄 {title}", ""]
-    out.extend(f"- {l}" for l in lines)
-    out.append("")
-    return out
-
-
-def render_tool(tool: str, data: dict) -> List[str]:
-    lines: List[str] = []
-
-    returncode = data.get("returncode", "N/A")
-    stdout = data.get("stdout", "")
-    stderr = data.get("stderr", "")
-
-    status = "✅ Clean" if returncode == 0 else "❌ Issues detected"
-
-    lines.extend([
-        f"## 🔧 {tool}",
-        f"**Return Code:** `{returncode}`  ",
-        f"**Status:** {status}",
-        ""
-    ])
-
-    # ---- stdout ----
-    if stdout.strip():
-        try:
-            parsed = json.loads(stdout)
-            lines.extend(render_json_block("Standard Output (Parsed JSON)", parsed))
-        except Exception:
-            lines.extend(render_text_block("Standard Output", stdout))
-    else:
-        lines.append("_No standard output_\n")
-
-    # ---- stderr ----
-    if stderr.strip():
-        lines.extend([
-            "### ⚠ Standard Error",
-            "```text",
-            stderr.rstrip(),
-            "```",
-            ""
-        ])
-
-    lines.append("---\n")
-    return lines
-
-
-# -------------------------------
-# Main converter
-# -------------------------------
 
 def convert(json_path: Path, md_path: Path) -> None:
     with json_path.open("r", encoding="utf-8") as f:
@@ -115,7 +57,6 @@ def convert(json_path: Path, md_path: Path) -> None:
 
     md: List[str] = []
 
-    # ---------- Header ----------
     md.extend([
         "# 🔍 AI & GenOps – Analyzer Report",
         "",
@@ -126,15 +67,28 @@ def convert(json_path: Path, md_path: Path) -> None:
         ""
     ])
 
-    # ---------- Severity Summary ----------
+    # -------- FIXED SEVERITY SCAN --------
     severity_counts = defaultdict(int)
-    extract_severities(data, severity_counts)
+
+    for tool, result in data.items():
+        if not isinstance(result, dict):
+            continue
+
+        # Parse JSON buried inside stdout
+        stdout = result.get("stdout", "")
+        try:
+            parsed = json.loads(stdout)
+            extract_severities(parsed, severity_counts)
+        except Exception:
+            pass
+
+        extract_severities(result, severity_counts)
 
     md.extend([
         "## 🚦 Severity Overview",
         "",
         "| Severity | Count |",
-        "|--------|-------|"
+        "|----------|-------|"
     ])
 
     for sev in SEVERITY_ORDER:
@@ -157,34 +111,13 @@ def convert(json_path: Path, md_path: Path) -> None:
 
     md.extend(["", "---", ""])
 
-    # ---------- Detailed Results ----------
     md.append("## 📋 Detailed Tool Results\n")
 
     for tool, tool_data in data.items():
-        if isinstance(tool_data, dict):
-            md.extend(render_tool(tool, tool_data))
-        else:
-            md.extend([
-                f"## 🔧 {tool}",
-                "```json",
-                json.dumps(tool_data, indent=2),
-                "```",
-                "\n---\n"
-            ])
+        md.extend([f"## 🔧 {tool}", "```json", json.dumps(tool_data, indent=2), "```", "\n---\n"])
 
     md_path.write_text("\n".join(md), encoding="utf-8")
 
-
-# -------------------------------
-# CLI entry
-# -------------------------------
-
 if __name__ == "__main__":
     import sys
-
-    if len(sys.argv) != 3:
-        print("Usage: json_to_md.py <input.json> <output.md>")
-        raise SystemExit(1)
-
     convert(Path(sys.argv[1]), Path(sys.argv[2]))
-    print("✔ Analyzer report generated (structured & readable)")
