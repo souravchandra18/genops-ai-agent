@@ -107,4 +107,4 @@ def run_command(cmd, cwd):
         result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
         return {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
     except Exception as e:
-        return {'error': str(e)}        
+        return {'error': str(e)}
