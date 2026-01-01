@@ -12,7 +12,7 @@ def call_llm(provider, prompt):
             'https://api.openai.com/v1/chat/completions',
             headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
             json={
-                'model': 'gpt-4.1-mini', 
+                'model': 'gpt-4o-mini', 
                 'messages': [{'role': 'user', 'content': prompt}], 
                 'max_tokens': 1200
             }
