@@ -20,6 +20,8 @@ def call_llm(provider, prompt):
             }
         )
         data = response.json()
+
+        print("LLM response:", data) 
         
         if 'error' in data:
             return {'error': f"OpenAI API Error: {data['error']['message']}"}
