@@ -1,6 +1,7 @@
 #Author: Sourav Chandra
 import os
 import requests
+import json
 
 def call_llm(provider, prompt):
     if provider == 'openai':
@@ -10,11 +11,34 @@ def call_llm(provider, prompt):
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
             headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
-            json={'model': 'gpt-4.1-mini', 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1200}
+            json={
+                'model': 'gpt-4.1-mini', 
+                'messages': [{'role': 'user', 'content': prompt}], 
+                'max_tokens': 1200
+            }
         )
         data = response.json()
+
+        print("LLM response:", data) 
+        
+        if 'error' in data:
+            return {'error': f"OpenAI API Error: {data['error']['message']}"}
+            
         text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-        return {'summary': '\n'.join(text.splitlines()[:8]), 'full': text}
+        
+        try:
+            # Try to parse as JSON first
+            parsed_json = json.loads(text)
+            return {
+                'summary': parsed_json.get('executive_summary', 'No summary available'),
+                'full': text
+            }
+        except json.JSONDecodeError:
+            # Fallback to text parsing
+            return {
+                'summary': '\n'.join(text.splitlines()[:8]), 
+                'full': text
+            }
 
     if provider == 'bedrock':
         return {'error': 'Bedrock adapter not implemented yet'}

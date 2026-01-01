@@ -1,0 +1,49 @@
+# Author: Sourav Chandra
+# Default thresholds and rules for policy engine
+
+python:
+  pylint:
+    threshold: 10        # max allowed issues
+  bandit:
+    threshold: 5
+
+javascript:
+  eslint:
+    threshold: 10
+
+go:
+  staticcheck:
+    threshold: 5
+
+java:
+  spotbugs:
+    threshold: 5
+  pmd:
+    threshold: 5
+  checkstyle:
+    threshold: 10
+
+ruby:
+  rubocop:
+    threshold: 10
+
+php:
+  phpcs:
+    threshold: 10
+  psalm:
+    threshold: 5
+
+dockerfile:
+  trivy:
+    threshold: 2         # critical + high combined
+
+terraform:
+  tfsec:
+    threshold: 3
+  checkov:
+    threshold: 3
+
+k8s:
+  kube-linter:
+    threshold: 1
+

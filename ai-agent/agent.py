@@ -11,7 +11,11 @@ from github import Github, Auth
 from openai import OpenAI
 
 
-  # Note: Used only for GenOps Guardian
+from policy_engine import PolicyEngine
+from remediation_engine import RemediationEngine
+from pr_enforcer import PREnforcer
+from ai_usage_guard import AIUsageGuard
+
 
 # ---------- Helpers ----------
 
@@ -109,10 +113,25 @@ def run_agent():
     run_semgrep = os.getenv("INPUT_RUN_SEMGREP", "true").lower() == "true"
     pr_number = os.getenv("PR_NUMBER")
 
+    # --- Step 1: Run analyzers + LLM ---
     llm_response, analyzer_results = run_universal_agent(
         repo_root, llm_provider, run_semgrep
     )
     genops_data = run_genops_guardian(repo_root)
+
+    # --- Step 2: Apply policy engine ---
+    policy_engine = PolicyEngine("policies/default.yaml")
+    compliance_status = policy_engine.evaluate(analyzer_results, genops_data)
+    # --- Step 3: AI Governance ---
+    ai_guard = AIUsageGuard(repo_root)
+    ai_guard.scan_repo()
+    # --- Step 4: Tier-1 Remediation ---
+    remediation = RemediationEngine(repo_root)
+    remediation_suggestions = remediation.suggest_fixes(analyzer_results)
+    # --- Step 5: PR Enforcement ---
+    pr_enforcer = PREnforcer(pr_number)
+    pr_enforcer.evaluate(compliance_status, genops_data)
+  
 
     # --- Always store artifacts ---
     os.makedirs("analysis_results", exist_ok=True)
@@ -125,6 +144,11 @@ def run_agent():
 
     with open("analysis_results/genops_guardian.json", "w") as f:
         json.dump(genops_data, f, indent=2)
+
+    with open("analysis_results/remediation_suggestions.json", "w") as f:
+        json.dump(remediation_suggestions, f, indent=2)
+    with open("analysis_results/compliance_status.json", "w") as f:
+        json.dump(compliance_status, f, indent=2)  
 
     # --- Convert JSON → Markdown ---
     json_to_markdown(
