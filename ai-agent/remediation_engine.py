@@ -1,7 +1,7 @@
 # Author: Sourav Chandra
 import os
 import json
-from ai-agent.llm import call_llm
+from llm import call_llm
 
 def generate_remediation(analyzer_results: dict) -> dict:
     prompt = f"""
