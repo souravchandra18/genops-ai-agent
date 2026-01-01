@@ -1,0 +1,21 @@
+# Author: Sourav Chandra
+# Default thresholds and rules for policy engine
+python:
+  pylint:
+    threshold: 10  # max allowed errors
+  bandit:
+    threshold: 5
+javascript:
+  eslint:
+    threshold: 10
+dockerfile:
+  trivy:
+    threshold: 2
+terraform:
+  tfsec:
+    threshold: 3
+  checkov:
+    threshold: 3
+k8s:
+  kube-linter:
+    threshold: 1
