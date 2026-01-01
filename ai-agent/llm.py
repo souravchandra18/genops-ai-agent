@@ -14,9 +14,7 @@ def call_llm(provider, prompt):
             json={
                 'model': 'gpt-4.1-mini', 
                 'messages': [{'role': 'user', 'content': prompt}], 
-                'max_tokens': 2000,
-                'temperature': 0.1,
-                'response_format': {'type': 'json_object'}
+                'max_tokens': 2000
             }
         )
         data = response.json()
@@ -33,15 +31,13 @@ def call_llm(provider, prompt):
             parsed_json = json.loads(text)
             return {
                 'summary': parsed_json.get('executive_summary', 'No summary available'),
-                'full': text,
-                'structured': parsed_json
+                'full': text
             }
         except json.JSONDecodeError:
             # Fallback to text parsing
             return {
                 'summary': '\n'.join(text.splitlines()[:8]), 
-                'full': text,
-                'structured': None
+                'full': text
             }
 
     if provider == 'bedrock':
