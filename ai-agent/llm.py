@@ -14,7 +14,7 @@ def call_llm(provider, prompt):
             json={
                 'model': 'gpt-4.1-mini', 
                 'messages': [{'role': 'user', 'content': prompt}], 
-                'max_tokens': 2000
+                'max_tokens': 1200
             }
         )
         data = response.json()
